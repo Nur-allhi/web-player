@@ -33,6 +33,7 @@
             height: 100%;
             background-color: rgba(0, 0, 0, 0.9); /* Semi-transparent black overlay */
             display: flex;
+            flex-direction: column; /* Allow stacking text and percentage */
             align-items: center;
             justify-content: center;
             z-index: 1000; /* Ensure it's on top */
@@ -44,6 +45,7 @@
             color: #fff;
             display: flex;
             letter-spacing: 0.2em; /* Add some letter spacing */
+            margin-bottom: 1rem; /* Space between text and percentage */
         }
 
         .loading-text-words {
@@ -73,6 +75,12 @@
                 transform: translateY(-8px) scale(1.05); /* Softer bounce, slight scale */
                 opacity: 1; /* Fully visible at peak */
             }
+        }
+
+        #loading-percentage {
+            font-size: 2.5rem;
+            font-weight: bold;
+            color: #fff;
         }
 
         /* Ensure JW Player container takes full width and height */
@@ -156,6 +164,7 @@
             <span class="loading-text-words">N</span>
             <span class="loading-text-words">G</span>
         </div>
+        <span id="loading-percentage">0%</span> <!-- New element for percentage -->
     </div>
 
     <!-- Custom Floating Controls -->
@@ -319,7 +328,25 @@
 
             playerInstance.on('ready', function() {
                 console.log('JW Player is ready!');
-                hideLoadingAnimation();
+                // The loading animation is now hidden by the 'play' event or a timeout
+            });
+
+            // Update loading percentage during buffering
+            playerInstance.on('bufferChange', function(event) {
+                const loadingPercentage = document.getElementById('loading-percentage');
+                if (loadingPercentage && document.getElementById('loading').style.display !== 'none') {
+                    loadingPercentage.textContent = `${Math.round(event.buffer)}%`;
+                }
+            });
+
+            // Show loading screen when buffering starts
+            playerInstance.on('buffer', function() {
+                document.getElementById('loading').style.display = 'flex';
+            });
+
+            // Hide loading screen when playback starts
+            playerInstance.on('play', function() {
+                hideLoadingAnimation(); // Hide the loading screen when playback begins
             });
 
             // Event listener for fullscreen changes to update button icon and control visibility
@@ -385,6 +412,7 @@
          * Function to hide the loading animation.
          */
         function hideLoadingAnimation() {
+            // Ensure loading animation is visible for at least 0.5 seconds for a smoother transition
             setTimeout(() => {
                 const loadingElement = document.getElementById('loading');
                 if (loadingElement) {
@@ -392,9 +420,9 @@
                     loadingElement.style.transition = 'opacity 0.5s ease-out';
                     setTimeout(() => {
                         loadingElement.style.display = 'none';
-                    }, 500);
+                    }, 500); // After fade out
                 }
-            }, 2000);
+            }, 500); // Minimum 0.5 seconds display for loading animation
         }
 
         // Initialize player and hide loading animation when the window loads
