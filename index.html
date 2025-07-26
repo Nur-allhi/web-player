@@ -13,30 +13,155 @@
         body {
             font-family: 'Inter', sans-serif;
         }
+        /* Custom scrollbar for the history list */
+        .link-history-list::-webkit-scrollbar {
+            width: 8px;
+        }
+        .link-history-list::-webkit-scrollbar-track {
+            background: #1F2937; /* Darker background for track */
+            border-radius: 10px;
+        }
+        .link-history-list::-webkit-scrollbar-thumb {
+            background: #4B5563; /* Gray thumb */
+            border-radius: 10px;
+        }
+        .link-history-list::-webkit-scrollbar-thumb:hover {
+            background: #6B7280; /* Lighter gray on hover */
+        }
     </style>
 </head>
 <body class="bg-gradient-to-br from-gray-900 to-black min-h-screen flex items-center justify-center p-4">
     <div class="bg-gray-800 p-8 rounded-2xl shadow-2xl w-full max-w-md border border-gray-700">
         <h1 class="text-4xl font-bold text-white mb-8 text-center">My Personal Player</h1>
 
-        <div class="mb-8">
+        <div class="mb-4">
             <label for="fullMediaLink" class="block text-gray-300 text-sm font-semibold mb-2">Combined Media Link:</label>
             <input type="text" id="fullMediaLink" placeholder="Enter MPD/M3U8 link with DRM (e.g., MPD_URL~drmScheme=clearkey&drmLicense=KEYID:KEY)"
                    class="w-full px-4 py-3 rounded-lg bg-gray-700 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 border border-gray-600">
         </div>
 
-        <button onclick="playMedia()"
-                class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-75 transition duration-300 ease-in-out transform hover:scale-105 shadow-lg">
-            Play Media
-        </button>
+        <div class="flex space-x-4 mb-8">
+            <button onclick="playMedia()"
+                    class="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-75 transition duration-300 ease-in-out transform hover:scale-105 shadow-lg">
+                Play Media
+            </button>
+            <button onclick="saveCurrentLink()"
+                    class="bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-4 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-opacity-75 transition duration-300 ease-in-out transform hover:scale-105 shadow-lg text-sm">
+                Save Link
+            </button>
+        </div>
 
-        <p class="text-gray-500 text-xs text-center mt-6">
+        <p class="text-gray-500 text-xs text-center mb-6">
             Enter the full link string. The player will automatically parse the media URL and DRM details.
             Use '~' as the separator between the media URL and DRM parameters.
         </p>
+
+        <div class="link-history-section mt-6 pt-6 border-t border-gray-700">
+            <h2 class="text-xl font-bold text-white mb-4">Previous Links</h2>
+            <div id="linkHistoryList" class="link-history-list bg-gray-700 p-4 rounded-lg max-h-48 overflow-y-auto">
+                <!-- Links will be loaded here by JavaScript -->
+                <p class="text-gray-400 text-sm" id="noLinksMessage">No previous links saved yet.</p>
+            </div>
+            <button onclick="clearHistory()"
+                    class="w-full mt-4 bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-opacity-75 transition duration-300 ease-in-out transform hover:scale-105 shadow-lg text-sm">
+                Clear History
+            </button>
+        </div>
     </div>
 
     <script>
+        const MAX_HISTORY_ITEMS = 10; // Limit the number of stored links
+
+        /**
+         * Loads links from local storage and displays them.
+         */
+        function loadLinksFromHistory() {
+            const historyList = document.getElementById('linkHistoryList');
+            const noLinksMessage = document.getElementById('noLinksMessage');
+            let links = JSON.parse(localStorage.getItem('mediaLinksHistory')) || [];
+
+            historyList.innerHTML = ''; // Clear existing list
+            if (links.length === 0) {
+                historyList.appendChild(noLinksMessage);
+                noLinksMessage.style.display = 'block';
+            } else {
+                noLinksMessage.style.display = 'none';
+                links.forEach((link, index) => {
+                    const linkItem = document.createElement('div');
+                    linkItem.className = 'flex items-center justify-between bg-gray-600 p-3 rounded-md mb-2 last:mb-0';
+                    linkItem.innerHTML = `
+                        <span class="text-gray-200 text-sm truncate cursor-pointer hover:text-blue-300" onclick="selectLink('${link.replace(/'/g, "\\'")}')" title="${link}">
+                            ${link}
+                        </span>
+                        <button onclick="removeLinkFromHistory(${index})" class="ml-2 text-red-400 hover:text-red-600 focus:outline-none">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                        </button>
+                    `;
+                    historyList.appendChild(linkItem);
+                });
+            }
+        }
+
+        /**
+         * Saves the current link from the input field to local storage.
+         */
+        function saveCurrentLink() {
+            const mediaLinkInput = document.getElementById('fullMediaLink');
+            const linkToSave = mediaLinkInput.value.trim();
+
+            if (linkToSave) {
+                let links = JSON.parse(localStorage.getItem('mediaLinksHistory')) || [];
+
+                // Add to the beginning if not already present
+                if (!links.includes(linkToSave)) {
+                    links.unshift(linkToSave);
+                    // Trim history to MAX_HISTORY_ITEMS
+                    if (links.length > MAX_HISTORY_ITEMS) {
+                        links = links.slice(0, MAX_HISTORY_ITEMS);
+                    }
+                    localStorage.setItem('mediaLinksHistory', JSON.stringify(links));
+                    loadLinksFromHistory(); // Reload the displayed list
+                    alert('Link saved to history!'); // Using alert for simplicity
+                } else {
+                    alert('Link already exists in history!');
+                }
+            } else {
+                alert('Please enter a link to save.');
+            }
+        }
+
+        /**
+         * Selects a link from history and puts it into the input field.
+         * @param {string} link - The link to select.
+         */
+        function selectLink(link) {
+            document.getElementById('fullMediaLink').value = link;
+        }
+
+        /**
+         * Removes a specific link from history by its index.
+         * @param {number} index - The index of the link to remove.
+         */
+        function removeLinkFromHistory(index) {
+            let links = JSON.parse(localStorage.getItem('mediaLinksHistory')) || [];
+            if (index > -1 && index < links.length) {
+                links.splice(index, 1); // Remove the item
+                localStorage.setItem('mediaLinksHistory', JSON.stringify(links));
+                loadLinksFromHistory(); // Reload the displayed list
+            }
+        }
+
+        /**
+         * Clears all links from local storage history.
+         */
+        function clearHistory() {
+            if (confirm('Are you sure you want to clear all previous links?')) { // Using confirm for simplicity
+                localStorage.removeItem('mediaLinksHistory');
+                loadLinksFromHistory(); // Reload the displayed list
+                alert('Link history cleared!');
+            }
+        }
+
         /**
          * Function to handle media playback.
          * It retrieves the full combined link string from the input field,
@@ -60,6 +185,9 @@
             // Redirect to the player page
             window.location.href = redirectLink;
         }
+
+        // Load links from history when the page loads
+        document.addEventListener('DOMContentLoaded', loadLinksFromHistory);
     </script>
 </body>
 </html>
