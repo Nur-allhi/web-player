@@ -3,367 +3,63 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Media Player</title>
+    <title>Personal Media Player</title>
     <!-- Tailwind CSS CDN for easy styling -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Font Awesome for icons -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <link rel="shortcut icon" type="image/x-icon" href="https://i.postimg.cc/YC3Npf10/image.webp">
     <style>
         /* Custom styles for the Inter font */
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
         body {
             font-family: 'Inter', sans-serif;
-            background-color: #000; /* Black background for player page */
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            min-height: 100vh;
-            margin: 0;
-            overflow: hidden; /* Prevent scrollbars due to loading animation */
-        }
-
-        /* Styling for the loading animation */
-        .loading {
-            position: fixed; /* Cover the entire screen */
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background-color: rgba(0, 0, 0, 0.9); /* Semi-transparent black overlay */
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            z-index: 1000; /* Ensure it's on top */
-        }
-
-        .loading-text {
-            font-size: 3.5rem; /* Slightly larger text */
-            font-weight: bold;
-            color: #fff;
-            display: flex;
-            letter-spacing: 0.2em; /* Add some letter spacing */
-        }
-
-        .loading-text-words {
-            animation: pulse-fade 2s infinite ease-in-out; /* Smoother, pulsing animation */
-            display: inline-block;
-            margin: 0 0.2rem;
-            opacity: 0.7; /* Start slightly faded */
-            transform: translateY(0) scale(1);
-        }
-
-        /* Delay animation and set a gradient of colors for each letter */
-        .loading-text-words:nth-child(1) { animation-delay: 0.1s; color: #8B5CF6; /* Violet */ }
-        .loading-text-words:nth-child(2) { animation-delay: 0.2s; color: #6366F1; /* Indigo */ }
-        .loading-text-words:nth-child(3) { animation-delay: 0.3s; color: #3B82F6; /* Blue */ }
-        .loading-text-words:nth-child(4) { animation-delay: 0.4s; color: #06B6D4; /* Cyan */ }
-        .loading-text-words:nth-child(5) { animation-delay: 0.5s; color: #10B981; /* Emerald */ }
-        .loading-text-words:nth-child(6) { animation-delay: 0.6s; color: #F59E0B; /* Amber */ }
-        .loading-text-words:nth-child(7) { animation-delay: 0.7s; color: #EF4444; /* Red */ }
-
-
-        @keyframes pulse-fade {
-            0%, 100% {
-                transform: translateY(0) scale(1);
-                opacity: 0.7;
-            }
-            50% {
-                transform: translateY(-8px) scale(1.05); /* Softer bounce, slight scale */
-                opacity: 1; /* Fully visible at peak */
-            }
-        }
-
-        /* Ensure JW Player container takes full width and height */
-        #jwplayerDiv {
-            width: 100vw; /* Viewport width */
-            height: 100vh; /* Viewport height */
-            display: flex; /* Use flexbox to center player if needed */
-            justify-content: center;
-            align-items: center;
-        }
-
-        /* Override JW Player default styles if necessary for responsiveness */
-        .jwplayer {
-            width: 100% !important;
-            height: 100% !important;
-        }
-
-        /* Custom Floating Controls Styling */
-        .floating-controls {
-            position: absolute;
-            right: 1rem; /* Distance from right edge */
-            top: 50%;
-            transform: translateY(-50%);
-            display: flex;
-            flex-direction: column;
-            gap: 1rem; /* Space between buttons */
-            z-index: 100; /* Ensure controls are above the player */
-        }
-
-        .control-button {
-            width: 3.5rem; /* Round button size */
-            height: 3.5rem;
-            border-radius: 50%;
-            background-color: rgba(255, 255, 255, 0.1); /* Transparent white background */
-            backdrop-filter: blur(10px); /* Glass effect */
-            -webkit-backdrop-filter: blur(10px); /* Safari support */
-            border: 1px solid rgba(255, 255, 255, 0.2); /* Subtle border */
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1), 0 1px 3px rgba(0, 0, 0, 0.08); /* Soft shadow */
-            color: white;
-            font-size: 1.5rem;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
-            transition: background-color 0.3s ease, transform 0.2s ease;
-        }
-
-        .control-button:hover {
-            background-color: rgba(255, 255, 255, 0.2);
-            transform: scale(1.05);
         }
     </style>
 </head>
-<body>
-    <!-- JW Player Library -->
-    <script src="https://cdn.jwplayer.com/libraries/SAHhwvZq.js"></script>
+<body class="bg-gradient-to-br from-gray-900 to-black min-h-screen flex items-center justify-center p-4">
+    <div class="bg-gray-800 p-8 rounded-2xl shadow-2xl w-full max-w-md border border-gray-700">
+        <h1 class="text-4xl font-bold text-white mb-8 text-center">My Personal Player</h1>
 
-    <!-- The div where JW Player will be embedded -->
-    <div id="jwplayerDiv" class="relative"></div>
-
-    <!-- Loading animation -->
-    <div id="loading" class="loading">
-        <div class="loading-text">
-            <span class="loading-text-words">L</span>
-            <span class="loading-text-words">O</span>
-            <span class="loading-text-words">A</span>
-            <span class="loading-text-words">D</span>
-            <span class="loading-text-words">I</span>
-            <span class="loading-text-words">N</span>
-            <span class="loading-text-words">G</span>
+        <div class="mb-8">
+            <label for="fullMediaLink" class="block text-gray-300 text-sm font-semibold mb-2">Combined Media Link:</label>
+            <input type="text" id="fullMediaLink" placeholder="Enter MPD/M3U8 link with DRM (e.g., MPD_URL~drmScheme=clearkey&drmLicense=KEYID:KEY)"
+                   class="w-full px-4 py-3 rounded-lg bg-gray-700 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 border border-gray-600">
         </div>
-    </div>
 
-    <!-- Custom Floating Controls -->
-    <div class="floating-controls">
-        <button id="fullscreenButton" class="control-button" onclick="toggleFullscreen()">
-            <i class="fas fa-expand"></i>
+        <button onclick="playMedia()"
+                class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-75 transition duration-300 ease-in-out transform hover:scale-105 shadow-lg">
+            Play Media
         </button>
-        <button id="muteButton" class="control-button" onclick="toggleMute()">
-            <i class="fas fa-volume-up"></i>
-        </button>
-        <button onclick="window.location.href='index.html'"
-                class="control-button bg-gray-700 hover:bg-gray-600 text-white text-sm">
-            <i class="fas fa-arrow-left"></i>
-        </button>
+
+        <p class="text-gray-500 text-xs text-center mt-6">
+            Enter the full link string. The player will automatically parse the media URL and DRM details.
+            Use '~' as the separator between the media URL and DRM parameters.
+        </p>
     </div>
 
     <script>
-        let playerInstance; // Declare playerInstance globally to be accessible by control functions
-
         /**
-         * Main function to initialize and configure JW Player.
-         * It retrieves media and DRM parameters from the URL query string.
-         * Now handles a single 'fullLink' parameter containing all details,
-         * using '~' as the primary separator.
+         * Function to handle media playback.
+         * It retrieves the full combined link string from the input field,
+         * replaces any '|' separator with '~' for URL safety,
+         * constructs a URL for the player page, and redirects the browser.
          */
-        function initializePlayer() {
-            // Get URL query parameters
-            const queryParams = new URLSearchParams(window.location.search);
-            const fullLink = queryParams.get('fullLink'); // The new parameter to handle
+        function playMedia() {
+            const fullMediaLink = document.getElementById('fullMediaLink').value.trim();
 
-            let mediaUrl = null; // Renamed from mpdLink/m3u8Link for generality
-            let keyId = null;
-            let key = null;
-
-            // Parse the fullLink string if it exists
-            if (fullLink) {
-                const decodedFullLink = decodeURIComponent(fullLink);
-                // Split by '~' instead of '|'
-                const parts = decodedFullLink.split('~');
-                mediaUrl = parts[0]; // The first part is assumed to be the media URL
-
-                if (parts.length > 1) {
-                    // Parse the DRM parameters from the second part
-                    const drmParamsString = parts[1];
-                    // Create a temporary URLSearchParams object to parse the DRM string
-                    const tempSearchParams = new URLSearchParams(drmParamsString);
-                    const drmLicense = tempSearchParams.get('drmLicense');
-
-                    if (drmLicense) {
-                        const drmParts = drmLicense.split(':');
-                        if (drmParts.length === 2) {
-                            keyId = drmParts[0];
-                            key = drmParts[1];
-                        } else {
-                            console.warn('Invalid drmLicense format within fullLink. Expected "keyId:key".');
-                        }
-                    }
-                }
-
-            } else {
-                // Fallback to previous query parameter logic if fullLink is not provided
-                // This allows for backward compatibility if you still use the old index.html or manually craft URLs
-                mediaUrl = queryParams.get('mpd') || queryParams.get('m3u8'); // Get either mpd or m3u8
-                keyId = queryParams.get('keyId');
-                key = queryParams.get('key');
-                const drmLicense = queryParams.get('drmLicense');
-
-                if (drmLicense) {
-                    const parts = drmLicense.split(':');
-                    if (parts.length === 2) {
-                        keyId = parts[0];
-                        key = parts[1];
-                    } else {
-                        console.warn('Invalid drmLicense format. Expected "keyId:key".');
-                    }
-                }
+            // Check if a media link is provided
+            if (!fullMediaLink) {
+                alert('Please enter a combined media link to play.'); // Using alert for simplicity, consider a custom modal for production
+                return;
             }
 
+            // Replace '|' with '~' for safer URL passing, then encode the entire string
+            // This ensures consistency if the user pastes a link with '|'
+            const cleanedLink = fullMediaLink.replace(/\|/g, '~');
+            const redirectLink = `player.html?fullLink=${encodeURIComponent(cleanedLink)}`;
 
-            // Base JW Player configuration
-            let playerConfig = {
-                autostart: true, // Start playback automatically
-                preload: "auto", // Preload media data to start playback as quickly as possible
-                repeat: false, // Do not repeat by default
-                volume: 100, // Set initial volume to 100%
-                mute: false, // Not muted by default
-                stretching: "uniform", // Scale video uniformly while maintaining aspect ratio
-                width: "100%", // Player width
-                height: "100%", // Player height
-                controls: false, // IMPORTANT: Disable default JW Player controls
-                cast: {}, // Enable casting (e.g., Chromecast)
-                setPip: true, // Enable Picture-in-Picture
-                primary: "html5", // Prioritize HTML5 playback for better performance and compatibility
-                skin: { // Custom skin settings
-                    name: "Denver", // Skin name
-                    active: "#3B82F6", // Active color (blue)
-                    inactive: "#D1D5DB", // Inactive color (light gray)
-                    background: "#1F2937" // Background color (dark gray)
-                },
-                // For low quality/faster startup, JW Player's adaptive bitrate (ABR)
-                // algorithm will automatically select the most appropriate quality based on network conditions.
-                // We ensure it starts quickly and lets ABR handle quality.
-            };
-
-            // Configure player based on media type and URL
-            if (mediaUrl) {
-                playerConfig.file = mediaUrl; // Set the media URL
-
-                // Determine type based on extension
-                if (mediaUrl.includes('.mpd')) {
-                    playerConfig.type = "dash";
-                } else if (mediaUrl.includes('.m3u8')) {
-                    playerConfig.type = "hls";
-                } else {
-                    // For other formats (e.g., direct MP4), JW Player might auto-detect
-                    console.log('Media URL is not .mpd or .m3u8, letting JW Player auto-detect type.');
-                }
-
-                // Add ClearKey DRM configuration if keys are provided
-                if (keyId && key) {
-                    playerConfig.drm = {
-                        clearkey: {
-                            key: key,
-                            keyId: keyId
-                        }
-                    };
-                } else {
-                    playerConfig.drm = {}; // Ensure drm object exists even if empty
-                }
-            } else {
-                // No valid media link found, display a message
-                const jwplayerDiv = document.getElementById('jwplayerDiv');
-                jwplayerDiv.innerHTML = '<p class="text-white text-xl text-center">No media link provided. Please go back and enter a valid link.</p>';
-                // Hide loading animation immediately if no media
-                document.getElementById('loading').style.display = 'none';
-                return; // Exit function if no media
-            }
-
-            // Initialize JW Player
-            playerInstance = jwplayer('jwplayerDiv').setup(playerConfig); // Assign to global variable
-
-            // Event listener for when the player is ready
-            playerInstance.on('ready', function() {
-                console.log('JW Player is ready!');
-                // Hide loading animation once player is ready (or after a timeout)
-                hideLoadingAnimation();
-            });
-
-            // Removed automatic fullscreen on play, as requested for manual control.
-            // playerInstance.on('play', function() {
-            //     console.log('Stream started playing, going full screen...');
-            //     setTimeout(() => {
-            //         playerInstance.setFullscreen(true);
-            //     }, 100);
-            // });
-
-            // Event listener for fullscreen changes to update button icon
-            playerInstance.on('fullscreen', function(event) {
-                const fullscreenButton = document.getElementById('fullscreenButton');
-                if (fullscreenButton) {
-                    fullscreenButton.innerHTML = event.fullscreen ? '<i class="fas fa-compress"></i>' : '<i class="fas fa-expand"></i>';
-                }
-            });
-
-            // Event listener for mute changes to update button icon
-            playerInstance.on('mute', function(event) {
-                const muteButton = document.getElementById('muteButton');
-                if (muteButton) {
-                    muteButton.innerHTML = event.mute ? '<i class="fas fa-volume-mute"></i>' : '<i class="fas fa-volume-up"></i>';
-                }
-            });
-
-
-            // Event listener for errors
-            playerInstance.on('error', function(event) {
-                console.error('JW Player Error:', event);
-                const jwplayerDiv = document.getElementById('jwplayerDiv');
-                jwplayerDiv.innerHTML = `<p class="text-red-500 text-xl text-center">Error playing media: ${event.message}. Please check the link and keys.</p>`;
-                hideLoadingAnimation(); // Hide loading on error
-            });
+            // Redirect to the player page
+            window.location.href = redirectLink;
         }
-
-        /**
-         * Toggles fullscreen mode for the player.
-         */
-        function toggleFullscreen() {
-            if (playerInstance) {
-                playerInstance.setFullscreen(!playerInstance.getFullscreen());
-            }
-        }
-
-        /**
-         * Toggles mute/unmute for the player.
-         */
-        function toggleMute() {
-            if (playerInstance) {
-                playerInstance.setMute(!playerInstance.getMute());
-            }
-        }
-
-        /**
-         * Function to hide the loading animation.
-         * It uses a timeout to ensure the animation plays for a minimum duration.
-         */
-        function hideLoadingAnimation() {
-            // Ensure loading animation is visible for at least 2 seconds for aesthetic reasons
-            setTimeout(() => {
-                const loadingElement = document.getElementById('loading');
-                if (loadingElement) {
-                    loadingElement.style.opacity = '0'; // Fade out
-                    loadingElement.style.transition = 'opacity 0.5s ease-out';
-                    setTimeout(() => {
-                        loadingElement.style.display = 'none'; // Then hide
-                    }, 500); // After fade out
-                }
-            }, 2000); // Minimum 2 seconds display for loading animation
-        }
-
-        // Initialize player and hide loading animation when the window loads
-        window.onload = initializePlayer;
     </script>
 </body>
 </html>
