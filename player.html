@@ -179,7 +179,7 @@
             // Base JW Player configuration
             let playerConfig = {
                 autostart: true, // Start playback automatically
-                preload: "auto", // Preload media data
+                preload: "auto", // Preload media data to start playback as quickly as possible
                 repeat: false, // Do not repeat by default
                 volume: 100, // Set initial volume to 100%
                 mute: false, // Not muted by default
@@ -189,12 +189,16 @@
                 controls: true, // Explicitly enable JW Player controls
                 cast: {}, // Enable casting (e.g., Chromecast)
                 setPip: true, // Enable Picture-in-Picture
+                primary: "html5", // Prioritize HTML5 playback for better performance and compatibility
                 skin: { // Custom skin settings
                     name: "Denver", // Skin name
                     active: "#3B82F6", // Active color (blue)
                     inactive: "#D1D5DB", // Inactive color (light gray)
                     background: "#1F2937" // Background color (dark gray)
-                }
+                },
+                // For low quality/faster startup, JW Player's adaptive bitrate (ABR)
+                // algorithm will automatically select the most appropriate quality based on network conditions.
+                // We ensure it starts quickly and lets ABR handle quality.
             };
 
             // Configure player based on media type and URL
@@ -239,6 +243,15 @@
                 console.log('JW Player is ready!');
                 // Hide loading animation once player is ready (or after a timeout)
                 hideLoadingAnimation();
+            });
+
+            // Event listener for when the stream starts playing to go full screen
+            playerInstance.on('play', function() {
+                console.log('Stream started playing, going full screen...');
+                // Request full screen after a short delay to ensure player is fully rendered
+                setTimeout(() => {
+                    playerInstance.setFullscreen(true);
+                }, 100); // Small delay to prevent race conditions
             });
 
             // Event listener for errors
