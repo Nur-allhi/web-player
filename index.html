@@ -32,15 +32,26 @@
 </head>
 <body class="bg-gradient-to-br from-gray-900 to-black min-h-screen flex items-center justify-center p-4">
     <div class="bg-gray-800 p-8 rounded-2xl shadow-2xl w-full max-w-md border border-gray-700">
-        <h1 class="text-4xl font-bold text-white mb-8 text-center">My Personal Player</h1>
+        <h1 class="text-4xl font-bold text-white mb-8 text-center">Web Player</h1>
+
+        <div class="mb-4">
+            <label for="streamName" class="block text-gray-300 text-sm font-semibold mb-2">Stream Name:</label>
+            <input type="text" id="streamName" placeholder="e.g., TNT 1, Willoq, Stasports 1"
+                   class="w-full px-4 py-3 rounded-lg bg-gray-700 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 border border-gray-600">
+        </div>
 
         <div class="mb-4">
             <label for="fullMediaLink" class="block text-gray-300 text-sm font-semibold mb-2">Combined Media Link:</label>
             <input type="text" id="fullMediaLink" placeholder="Enter MPD/M3U8 link with DRM (e.g., MPD_URL~drmScheme=clearkey&drmLicense=KEYID:KEY)"
-                   class="w-full px-4 py-3 rounded-lg bg-gray-700 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 border border-gray-600">
+                   class="w-full px-4 py-3 rounded-lg bg-gray-700 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 border border-gray-600"
+                   oninput="autoPopulateStreamName()"> <!-- Added oninput event -->
         </div>
 
         <div class="flex space-x-4 mb-8">
+            <button onclick="pasteLink()"
+                    class="bg-gray-600 hover:bg-gray-700 text-white font-bold py-3 px-4 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-opacity-75 transition duration-300 ease-in-out transform hover:scale-105 shadow-lg text-sm">
+                Paste
+            </button>
             <button onclick="playMedia()"
                     class="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-75 transition duration-300 ease-in-out transform hover:scale-105 shadow-lg">
                 Play Media
@@ -73,6 +84,79 @@
         const MAX_HISTORY_ITEMS = 10; // Limit the number of stored links
 
         /**
+         * Extracts a name from the given media link.
+         * Attempts to get the filename from the URL, cleans it, and capitalizes words.
+         * @param {string} link - The full media link string.
+         * @returns {string} - A suggested name for the stream.
+         */
+        function extractNameFromLink(link) {
+            if (!link) return '';
+
+            // Get the URL part before the '~' separator if it exists
+            const urlPart = link.split('~')[0];
+
+            try {
+                const url = new URL(urlPart);
+                let path = url.pathname;
+                
+                // Get the last segment of the path (filename)
+                let filename = path.substring(path.lastIndexOf('/') + 1);
+
+                // Remove file extensions (e.g., .mpd, .m3u8, .mp4)
+                filename = filename.replace(/\.(mpd|m3u8|mp4|mkv|avi|webm)$/i, '');
+
+                // Replace common separators with spaces (hyphens, underscores, dots)
+                filename = filename.replace(/[-_.]/g, ' ');
+
+                // Capitalize the first letter of each word
+                filename = filename.split(' ').map(word => {
+                    if (word.length === 0) return '';
+                    return word.charAt(0).toUpperCase() + word.slice(1).toLowerCase();
+                }).join(' ');
+
+                // Trim leading/trailing spaces
+                filename = filename.trim();
+
+                return filename || 'Auto-named Stream'; // Fallback if no name can be extracted
+            } catch (e) {
+                console.error("Error parsing URL for name extraction:", e);
+                return 'Auto-named Stream'; // Fallback for invalid URLs
+            }
+        }
+
+        /**
+         * Automatically populates the streamName input field based on the fullMediaLink.
+         * Only auto-fills if the streamName field is currently empty.
+         */
+        function autoPopulateStreamName() {
+            const streamNameInput = document.getElementById('streamName');
+            const fullMediaLinkInput = document.getElementById('fullMediaLink');
+
+            // Only auto-populate if the stream name field is empty
+            if (streamNameInput.value.trim() === '') {
+                const suggestedName = extractNameFromLink(fullMediaLinkInput.value);
+                streamNameInput.value = suggestedName;
+            }
+        }
+
+        /**
+         * Pastes content from the clipboard into the fullMediaLink input field.
+         */
+        async function pasteLink() {
+            const fullMediaLinkInput = document.getElementById('fullMediaLink');
+            try {
+                const text = await navigator.clipboard.readText();
+                if (text) {
+                    fullMediaLinkInput.value = text;
+                    autoPopulateStreamName(); // Auto-populate name after pasting
+                }
+            } catch (err) {
+                console.error('Failed to read clipboard contents: ', err);
+                alert('Failed to paste from clipboard. Please ensure you have granted clipboard permissions to this site or paste manually.');
+            }
+        }
+
+        /**
          * Loads links from local storage and displays them.
          */
         function loadLinksFromHistory() {
@@ -86,13 +170,22 @@
                 noLinksMessage.style.display = 'block';
             } else {
                 noLinksMessage.style.display = 'none';
-                links.forEach((link, index) => {
+                links.forEach((item, index) => {
+                    // Ensure item is an object with name and link properties
+                    const name = item.name || 'Untitled Stream';
+                    const link = item.link || item; // Fallback for old string-only entries
+
                     const linkItem = document.createElement('div');
                     linkItem.className = 'flex items-center justify-between bg-gray-600 p-3 rounded-md mb-2 last:mb-0';
                     linkItem.innerHTML = `
-                        <span class="text-gray-200 text-sm truncate cursor-pointer hover:text-blue-300" onclick="selectLink('${link.replace(/'/g, "\\'")}')" title="${link}">
-                            ${link}
-                        </span>
+                        <div class="flex-1 min-w-0">
+                            <span class="block text-white font-medium text-base truncate cursor-pointer hover:text-blue-300" onclick="selectLink('${name.replace(/'/g, "\\'")}', '${link.replace(/'/g, "\\'")}')" title="${name}">
+                                ${name}
+                            </span>
+                            <span class="block text-gray-400 text-xs truncate" title="${link}">
+                                ${link}
+                            </span>
+                        </div>
                         <button onclick="removeLinkFromHistory(${index})" class="ml-2 text-red-400 hover:text-red-600 focus:outline-none">
                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
                         </button>
@@ -103,38 +196,52 @@
         }
 
         /**
-         * Saves the current link from the input field to local storage.
+         * Saves the current link and stream name from the input fields to local storage.
          */
         function saveCurrentLink() {
+            const streamNameInput = document.getElementById('streamName');
             const mediaLinkInput = document.getElementById('fullMediaLink');
-            const linkToSave = mediaLinkInput.value.trim();
 
-            if (linkToSave) {
-                let links = JSON.parse(localStorage.getItem('mediaLinksHistory')) || [];
+            const streamName = streamNameInput.value.trim();
+            const mediaLink = mediaLinkInput.value.trim();
 
-                // Add to the beginning if not already present
-                if (!links.includes(linkToSave)) {
-                    links.unshift(linkToSave);
-                    // Trim history to MAX_HISTORY_ITEMS
-                    if (links.length > MAX_HISTORY_ITEMS) {
-                        links = links.slice(0, MAX_HISTORY_ITEMS);
-                    }
-                    localStorage.setItem('mediaLinksHistory', JSON.stringify(links));
-                    loadLinksFromHistory(); // Reload the displayed list
-                    alert('Link saved to history!'); // Using alert for simplicity
-                } else {
-                    alert('Link already exists in history!');
+            if (!streamName) {
+                alert('Please enter a stream name to save.');
+                return;
+            }
+            if (!mediaLink) {
+                alert('Please enter a media link to save.');
+                return;
+            }
+
+            let links = JSON.parse(localStorage.getItem('mediaLinksHistory')) || [];
+
+            const newItem = { name: streamName, link: mediaLink };
+
+            // Check if a link with the same name or link already exists to prevent duplicates
+            const exists = links.some(item => (item.name === newItem.name && item.link === newItem.link));
+
+            if (!exists) {
+                links.unshift(newItem); // Add to the beginning
+                // Trim history to MAX_HISTORY_ITEMS
+                if (links.length > MAX_HISTORY_ITEMS) {
+                    links = links.slice(0, MAX_HISTORY_ITEMS);
                 }
+                localStorage.setItem('mediaLinksHistory', JSON.stringify(links));
+                loadLinksFromHistory(); // Reload the displayed list
+                alert('Link and name saved to history!');
             } else {
-                alert('Please enter a link to save.');
+                alert('This stream name and link combination already exists in history!');
             }
         }
 
         /**
-         * Selects a link from history and puts it into the input field.
+         * Selects a link from history and puts it into the input fields.
+         * @param {string} name - The stream name to select.
          * @param {string} link - The link to select.
          */
-        function selectLink(link) {
+        function selectLink(name, link) {
+            document.getElementById('streamName').value = name;
             document.getElementById('fullMediaLink').value = link;
         }
 
