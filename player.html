@@ -6,6 +6,8 @@
     <title>Media Player</title>
     <!-- Tailwind CSS CDN for easy styling -->
     <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Font Awesome for icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <link rel="shortcut icon" type="image/x-icon" href="https://i.postimg.cc/YC3Npf10/image.webp">
     <style>
         /* Custom styles for the Inter font */
@@ -87,6 +89,41 @@
             width: 100% !important;
             height: 100% !important;
         }
+
+        /* Custom Floating Controls Styling */
+        .floating-controls {
+            position: absolute;
+            right: 1rem; /* Distance from right edge */
+            top: 50%;
+            transform: translateY(-50%);
+            display: flex;
+            flex-direction: column;
+            gap: 1rem; /* Space between buttons */
+            z-index: 100; /* Ensure controls are above the player */
+        }
+
+        .control-button {
+            width: 3.5rem; /* Round button size */
+            height: 3.5rem;
+            border-radius: 50%;
+            background-color: rgba(255, 255, 255, 0.1); /* Transparent white background */
+            backdrop-filter: blur(10px); /* Glass effect */
+            -webkit-backdrop-filter: blur(10px); /* Safari support */
+            border: 1px solid rgba(255, 255, 255, 0.2); /* Subtle border */
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1), 0 1px 3px rgba(0, 0, 0, 0.08); /* Soft shadow */
+            color: white;
+            font-size: 1.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: background-color 0.3s ease, transform 0.2s ease;
+        }
+
+        .control-button:hover {
+            background-color: rgba(255, 255, 255, 0.2);
+            transform: scale(1.05);
+        }
     </style>
 </head>
 <body>
@@ -109,13 +146,23 @@
         </div>
     </div>
 
-    <!-- Go Back Button -->
-    <button onclick="window.location.href='index.html'"
-            class="absolute bottom-4 left-1/2 -translate-x-1/2 bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-75 transition duration-300 ease-in-out transform hover:scale-105 shadow-lg z-50">
-        Go Back
-    </button>
+    <!-- Custom Floating Controls -->
+    <div class="floating-controls">
+        <button id="fullscreenButton" class="control-button" onclick="toggleFullscreen()">
+            <i class="fas fa-expand"></i>
+        </button>
+        <button id="muteButton" class="control-button" onclick="toggleMute()">
+            <i class="fas fa-volume-up"></i>
+        </button>
+        <button onclick="window.location.href='index.html'"
+                class="control-button bg-gray-700 hover:bg-gray-600 text-white text-sm">
+            <i class="fas fa-arrow-left"></i>
+        </button>
+    </div>
 
     <script>
+        let playerInstance; // Declare playerInstance globally to be accessible by control functions
+
         /**
          * Main function to initialize and configure JW Player.
          * It retrieves media and DRM parameters from the URL query string.
@@ -186,7 +233,7 @@
                 stretching: "uniform", // Scale video uniformly while maintaining aspect ratio
                 width: "100%", // Player width
                 height: "100%", // Player height
-                controls: true, // Explicitly enable JW Player controls
+                controls: false, // IMPORTANT: Disable default JW Player controls
                 cast: {}, // Enable casting (e.g., Chromecast)
                 setPip: true, // Enable Picture-in-Picture
                 primary: "html5", // Prioritize HTML5 playback for better performance and compatibility
@@ -236,7 +283,7 @@
             }
 
             // Initialize JW Player
-            const playerInstance = jwplayer('jwplayerDiv').setup(playerConfig);
+            playerInstance = jwplayer('jwplayerDiv').setup(playerConfig); // Assign to global variable
 
             // Event listener for when the player is ready
             playerInstance.on('ready', function() {
@@ -245,14 +292,30 @@
                 hideLoadingAnimation();
             });
 
-            // Event listener for when the stream starts playing to go full screen
-            playerInstance.on('play', function() {
-                console.log('Stream started playing, going full screen...');
-                // Request full screen after a short delay to ensure player is fully rendered
-                setTimeout(() => {
-                    playerInstance.setFullscreen(true);
-                }, 100); // Small delay to prevent race conditions
+            // Removed automatic fullscreen on play, as requested for manual control.
+            // playerInstance.on('play', function() {
+            //     console.log('Stream started playing, going full screen...');
+            //     setTimeout(() => {
+            //         playerInstance.setFullscreen(true);
+            //     }, 100);
+            // });
+
+            // Event listener for fullscreen changes to update button icon
+            playerInstance.on('fullscreen', function(event) {
+                const fullscreenButton = document.getElementById('fullscreenButton');
+                if (fullscreenButton) {
+                    fullscreenButton.innerHTML = event.fullscreen ? '<i class="fas fa-compress"></i>' : '<i class="fas fa-expand"></i>';
+                }
             });
+
+            // Event listener for mute changes to update button icon
+            playerInstance.on('mute', function(event) {
+                const muteButton = document.getElementById('muteButton');
+                if (muteButton) {
+                    muteButton.innerHTML = event.mute ? '<i class="fas fa-volume-mute"></i>' : '<i class="fas fa-volume-up"></i>';
+                }
+            });
+
 
             // Event listener for errors
             playerInstance.on('error', function(event) {
@@ -261,6 +324,24 @@
                 jwplayerDiv.innerHTML = `<p class="text-red-500 text-xl text-center">Error playing media: ${event.message}. Please check the link and keys.</p>`;
                 hideLoadingAnimation(); // Hide loading on error
             });
+        }
+
+        /**
+         * Toggles fullscreen mode for the player.
+         */
+        function toggleFullscreen() {
+            if (playerInstance) {
+                playerInstance.setFullscreen(!playerInstance.getFullscreen());
+            }
+        }
+
+        /**
+         * Toggles mute/unmute for the player.
+         */
+        function toggleMute() {
+            if (playerInstance) {
+                playerInstance.setMute(!playerInstance.getMute());
+            }
         }
 
         /**
