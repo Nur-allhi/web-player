@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Personal Media Player</title>
+    <!-- Tailwind CSS CDN for easy styling -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="shortcut icon" type="image/x-icon" href="https://i.postimg.cc/YC3Npf10/image.webp">
+    <style>
+        /* Custom styles for the Inter font */
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+    </style>
+</head>
+<body class="bg-gradient-to-br from-gray-900 to-black min-h-screen flex items-center justify-center p-4">
+    <div class="bg-gray-800 p-8 rounded-2xl shadow-2xl w-full max-w-md border border-gray-700">
+        <h1 class="text-4xl font-bold text-white mb-8 text-center">My Personal Player</h1>
+
+        <div class="mb-8">
+            <label for="fullMediaLink" class="block text-gray-300 text-sm font-semibold mb-2">Combined Media Link:</label>
+            <input type="text" id="fullMediaLink" placeholder="Enter MPD/M3U8 link with DRM (e.g., MPD_URL~drmScheme=clearkey&drmLicense=KEYID:KEY)"
+                   class="w-full px-4 py-3 rounded-lg bg-gray-700 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 border border-gray-600">
+        </div>
+
+        <button onclick="playMedia()"
+                class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-75 transition duration-300 ease-in-out transform hover:scale-105 shadow-lg">
+            Play Media
+        </button>
+
+        <p class="text-gray-500 text-xs text-center mt-6">
+            Enter the full link string. The player will automatically parse the media URL and DRM details.
+            Use '~' as the separator between the media URL and DRM parameters.
+        </p>
+    </div>
+
+    <script>
+        /**
+         * Function to handle media playback.
+         * It retrieves the full combined link string from the input field,
+         * replaces any '|' separator with '~' for URL safety,
+         * constructs a URL for the player page, and redirects the browser.
+         */
+        function playMedia() {
+            const fullMediaLink = document.getElementById('fullMediaLink').value.trim();
+
+            // Check if a media link is provided
+            if (!fullMediaLink) {
+                alert('Please enter a combined media link to play.'); // Using alert for simplicity, consider a custom modal for production
+                return;
+            }
+
+            // Replace '|' with '~' for safer URL passing, then encode the entire string
+            // This ensures consistency if the user pastes a link with '|'
+            const cleanedLink = fullMediaLink.replace(/\|/g, '~');
+            const redirectLink = `player.html?fullLink=${encodeURIComponent(cleanedLink)}`;
+
+            // Redirect to the player page
+            window.location.href = redirectLink;
+        }
+    </script>
+</body>
+</html>
