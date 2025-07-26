@@ -100,6 +100,18 @@
             flex-direction: column;
             gap: 1rem; /* Space between buttons */
             z-index: 100; /* Ensure controls are above the player */
+            opacity: 1; /* Default visible when not in fullscreen or on activity */
+            transition: opacity 0.3s ease-in-out; /* Smooth transition for hiding/showing */
+        }
+
+        /* When in fullscreen, controls are initially hidden, only show on hover/activity */
+        .jwplayer-fullscreen .floating-controls {
+            opacity: 0;
+        }
+
+        /* When in fullscreen and controls are active/hovered */
+        .jwplayer-fullscreen .floating-controls.active {
+            opacity: 1;
         }
 
         .control-button {
@@ -147,7 +159,7 @@
     </div>
 
     <!-- Custom Floating Controls -->
-    <div class="floating-controls">
+    <div class="floating-controls" id="floatingControls">
         <button id="fullscreenButton" class="control-button" onclick="toggleFullscreen()">
             <i class="fas fa-expand"></i>
         </button>
@@ -161,34 +173,65 @@
     </div>
 
     <script>
-        let playerInstance; // Declare playerInstance globally to be accessible by control functions
+        let playerInstance; // Declare playerInstance globally
+        let hideControlsTimeout; // To manage the timeout for hiding controls
+        const INACTIVITY_TIMEOUT = 3000; // 3 seconds of inactivity before hiding controls
+
+        /**
+         * Shows the floating controls.
+         */
+        function showControls() {
+            const floatingControls = document.getElementById('floatingControls');
+            if (floatingControls) {
+                floatingControls.classList.add('active');
+                // Clear any existing timeout to keep controls visible
+                clearTimeout(hideControlsTimeout);
+                // Set a new timeout to hide controls after inactivity
+                if (playerInstance && playerInstance.getFullscreen()) {
+                    hideControlsTimeout = setTimeout(hideControls, INACTIVITY_TIMEOUT);
+                }
+            }
+        }
+
+        /**
+         * Hides the floating controls.
+         */
+        function hideControls() {
+            const floatingControls = document.getElementById('floatingControls');
+            if (floatingControls) {
+                floatingControls.classList.remove('active');
+            }
+        }
+
+        /**
+         * Handles user activity (mousemove or keydown) to show/hide controls.
+         */
+        function handleUserActivity() {
+            if (playerInstance && playerInstance.getFullscreen()) {
+                showControls();
+            }
+        }
 
         /**
          * Main function to initialize and configure JW Player.
-         * It retrieves media and DRM parameters from the URL query string.
-         * Now handles a single 'fullLink' parameter containing all details,
-         * using '~' as the primary separator.
          */
         function initializePlayer() {
             // Get URL query parameters
             const queryParams = new URLSearchParams(window.location.search);
-            const fullLink = queryParams.get('fullLink'); // The new parameter to handle
+            const fullLink = queryParams.get('fullLink');
 
-            let mediaUrl = null; // Renamed from mpdLink/m3u8Link for generality
+            let mediaUrl = null;
             let keyId = null;
             let key = null;
 
             // Parse the fullLink string if it exists
             if (fullLink) {
                 const decodedFullLink = decodeURIComponent(fullLink);
-                // Split by '~' instead of '|'
                 const parts = decodedFullLink.split('~');
-                mediaUrl = parts[0]; // The first part is assumed to be the media URL
+                mediaUrl = parts[0];
 
                 if (parts.length > 1) {
-                    // Parse the DRM parameters from the second part
                     const drmParamsString = parts[1];
-                    // Create a temporary URLSearchParams object to parse the DRM string
                     const tempSearchParams = new URLSearchParams(drmParamsString);
                     const drmLicense = tempSearchParams.get('drmLicense');
 
@@ -202,11 +245,9 @@
                         }
                     }
                 }
-
             } else {
                 // Fallback to previous query parameter logic if fullLink is not provided
-                // This allows for backward compatibility if you still use the old index.html or manually craft URLs
-                mediaUrl = queryParams.get('mpd') || queryParams.get('m3u8'); // Get either mpd or m3u8
+                mediaUrl = queryParams.get('mpd') || queryParams.get('m3u8');
                 keyId = queryParams.get('keyId');
                 key = queryParams.get('key');
                 const drmLicense = queryParams.get('drmLicense');
@@ -222,47 +263,40 @@
                 }
             }
 
-
             // Base JW Player configuration
             let playerConfig = {
-                autostart: true, // Start playback automatically
-                preload: "auto", // Preload media data to start playback as quickly as possible
-                repeat: false, // Do not repeat by default
-                volume: 100, // Set initial volume to 100%
-                mute: false, // Not muted by default
-                stretching: "uniform", // Scale video uniformly while maintaining aspect ratio
-                width: "100%", // Player width
-                height: "100%", // Player height
+                autostart: true,
+                preload: "auto",
+                repeat: false,
+                volume: 100,
+                mute: false,
+                stretching: "uniform",
+                width: "100%",
+                height: "100%",
                 controls: false, // IMPORTANT: Disable default JW Player controls
-                cast: {}, // Enable casting (e.g., Chromecast)
-                setPip: true, // Enable Picture-in-Picture
-                primary: "html5", // Prioritize HTML5 playback for better performance and compatibility
-                skin: { // Custom skin settings
-                    name: "Denver", // Skin name
-                    active: "#3B82F6", // Active color (blue)
-                    inactive: "#D1D5DB", // Inactive color (light gray)
-                    background: "#1F2937" // Background color (dark gray)
+                cast: {},
+                setPip: true,
+                primary: "html5",
+                skin: {
+                    name: "Denver",
+                    active: "#3B82F6",
+                    inactive: "#D1D5DB",
+                    background: "#1F2937"
                 },
-                // For low quality/faster startup, JW Player's adaptive bitrate (ABR)
-                // algorithm will automatically select the most appropriate quality based on network conditions.
-                // We ensure it starts quickly and lets ABR handle quality.
             };
 
             // Configure player based on media type and URL
             if (mediaUrl) {
-                playerConfig.file = mediaUrl; // Set the media URL
+                playerConfig.file = mediaUrl;
 
-                // Determine type based on extension
                 if (mediaUrl.includes('.mpd')) {
                     playerConfig.type = "dash";
                 } else if (mediaUrl.includes('.m3u8')) {
                     playerConfig.type = "hls";
                 } else {
-                    // For other formats (e.g., direct MP4), JW Player might auto-detect
                     console.log('Media URL is not .mpd or .m3u8, letting JW Player auto-detect type.');
                 }
 
-                // Add ClearKey DRM configuration if keys are provided
                 if (keyId && key) {
                     playerConfig.drm = {
                         clearkey: {
@@ -271,40 +305,45 @@
                         }
                     };
                 } else {
-                    playerConfig.drm = {}; // Ensure drm object exists even if empty
+                    playerConfig.drm = {};
                 }
             } else {
-                // No valid media link found, display a message
                 const jwplayerDiv = document.getElementById('jwplayerDiv');
                 jwplayerDiv.innerHTML = '<p class="text-white text-xl text-center">No media link provided. Please go back and enter a valid link.</p>';
-                // Hide loading animation immediately if no media
                 document.getElementById('loading').style.display = 'none';
-                return; // Exit function if no media
+                return;
             }
 
             // Initialize JW Player
-            playerInstance = jwplayer('jwplayerDiv').setup(playerConfig); // Assign to global variable
+            playerInstance = jwplayer('jwplayerDiv').setup(playerConfig);
 
-            // Event listener for when the player is ready
             playerInstance.on('ready', function() {
                 console.log('JW Player is ready!');
-                // Hide loading animation once player is ready (or after a timeout)
                 hideLoadingAnimation();
             });
 
-            // Removed automatic fullscreen on play, as requested for manual control.
-            // playerInstance.on('play', function() {
-            //     console.log('Stream started playing, going full screen...');
-            //     setTimeout(() => {
-            //         playerInstance.setFullscreen(true);
-            //     }, 100);
-            // });
-
-            // Event listener for fullscreen changes to update button icon
+            // Event listener for fullscreen changes to update button icon and control visibility
             playerInstance.on('fullscreen', function(event) {
                 const fullscreenButton = document.getElementById('fullscreenButton');
+                const jwplayerContainer = document.getElementById('jwplayerDiv'); // Get the player container
                 if (fullscreenButton) {
                     fullscreenButton.innerHTML = event.fullscreen ? '<i class="fas fa-compress"></i>' : '<i class="fas fa-expand"></i>';
+                }
+
+                if (event.fullscreen) {
+                    // When entering fullscreen, show controls briefly and start inactivity timer
+                    document.documentElement.classList.add('jwplayer-fullscreen'); // Add class to html for CSS targeting
+                    showControls();
+                    // Add event listeners for user activity
+                    jwplayerContainer.addEventListener('mousemove', handleUserActivity);
+                    document.addEventListener('keydown', handleUserActivity);
+                } else {
+                    // When exiting fullscreen, ensure controls are always visible and remove listeners
+                    document.documentElement.classList.remove('jwplayer-fullscreen');
+                    clearTimeout(hideControlsTimeout); // Clear any pending hide timeout
+                    showControls(); // Ensure controls are visible when not in fullscreen
+                    jwplayerContainer.removeEventListener('mousemove', handleUserActivity);
+                    document.removeEventListener('keydown', handleUserActivity);
                 }
             });
 
@@ -316,13 +355,11 @@
                 }
             });
 
-
-            // Event listener for errors
             playerInstance.on('error', function(event) {
                 console.error('JW Player Error:', event);
                 const jwplayerDiv = document.getElementById('jwplayerDiv');
                 jwplayerDiv.innerHTML = `<p class="text-red-500 text-xl text-center">Error playing media: ${event.message}. Please check the link and keys.</p>`;
-                hideLoadingAnimation(); // Hide loading on error
+                hideLoadingAnimation();
             });
         }
 
@@ -346,20 +383,18 @@
 
         /**
          * Function to hide the loading animation.
-         * It uses a timeout to ensure the animation plays for a minimum duration.
          */
         function hideLoadingAnimation() {
-            // Ensure loading animation is visible for at least 2 seconds for aesthetic reasons
             setTimeout(() => {
                 const loadingElement = document.getElementById('loading');
                 if (loadingElement) {
-                    loadingElement.style.opacity = '0'; // Fade out
+                    loadingElement.style.opacity = '0';
                     loadingElement.style.transition = 'opacity 0.5s ease-out';
                     setTimeout(() => {
-                        loadingElement.style.display = 'none'; // Then hide
-                    }, 500); // After fade out
+                        loadingElement.style.display = 'none';
+                    }, 500);
                 }
-            }, 2000); // Minimum 2 seconds display for loading animation
+            }, 2000);
         }
 
         // Initialize player and hide loading animation when the window loads
