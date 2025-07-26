@@ -37,34 +37,39 @@
         }
 
         .loading-text {
-            font-size: 3rem;
+            font-size: 3.5rem; /* Slightly larger text */
             font-weight: bold;
             color: #fff;
             display: flex;
+            letter-spacing: 0.2em; /* Add some letter spacing */
         }
 
         .loading-text-words {
-            animation: bounce 1.5s infinite;
+            animation: pulse-fade 2s infinite ease-in-out; /* Smoother, pulsing animation */
             display: inline-block;
             margin: 0 0.2rem;
+            opacity: 0.7; /* Start slightly faded */
+            transform: translateY(0) scale(1);
         }
 
-        /* Delay animation for each letter */
-        .loading-text-words:nth-child(1) { animation-delay: 0.1s; color: #EF4444; /* Red */ }
-        .loading-text-words:nth-child(2) { animation-delay: 0.2s; color: #F97316; /* Orange */ }
-        .loading-text-words:nth-child(3) { animation-delay: 0.3s; color: #FBBF24; /* Amber */ }
-        .loading-text-words:nth-child(4) { animation-delay: 0.4s; color: #22C55E; /* Green */ }
-        .loading-text-words:nth-child(5) { animation-delay: 0.5s; color: #3B82F6; /* Blue */ }
-        .loading-text-words:nth-child(6) { animation-delay: 0.6s; color: #6366F1; /* Indigo */ }
-        .loading-text-words:nth-child(7) { animation-delay: 0.7s; color: #EC4899; /* Pink */ }
+        /* Delay animation and set a gradient of colors for each letter */
+        .loading-text-words:nth-child(1) { animation-delay: 0.1s; color: #8B5CF6; /* Violet */ }
+        .loading-text-words:nth-child(2) { animation-delay: 0.2s; color: #6366F1; /* Indigo */ }
+        .loading-text-words:nth-child(3) { animation-delay: 0.3s; color: #3B82F6; /* Blue */ }
+        .loading-text-words:nth-child(4) { animation-delay: 0.4s; color: #06B6D4; /* Cyan */ }
+        .loading-text-words:nth-child(5) { animation-delay: 0.5s; color: #10B981; /* Emerald */ }
+        .loading-text-words:nth-child(6) { animation-delay: 0.6s; color: #F59E0B; /* Amber */ }
+        .loading-text-words:nth-child(7) { animation-delay: 0.7s; color: #EF4444; /* Red */ }
 
 
-        @keyframes bounce {
+        @keyframes pulse-fade {
             0%, 100% {
-                transform: translateY(0);
+                transform: translateY(0) scale(1);
+                opacity: 0.7;
             }
             50% {
-                transform: translateY(-20px);
+                transform: translateY(-8px) scale(1.05); /* Softer bounce, slight scale */
+                opacity: 1; /* Fully visible at peak */
             }
         }
 
@@ -103,6 +108,12 @@
             <span class="loading-text-words">G</span>
         </div>
     </div>
+
+    <!-- Go Back Button -->
+    <button onclick="window.location.href='index.html'"
+            class="absolute bottom-4 left-1/2 -translate-x-1/2 bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-75 transition duration-300 ease-in-out transform hover:scale-105 shadow-lg z-50">
+        Go Back
+    </button>
 
     <script>
         /**
@@ -175,6 +186,7 @@
                 stretching: "uniform", // Scale video uniformly while maintaining aspect ratio
                 width: "100%", // Player width
                 height: "100%", // Player height
+                controls: true, // Explicitly enable JW Player controls
                 cast: {}, // Enable casting (e.g., Chromecast)
                 setPip: true, // Enable Picture-in-Picture
                 skin: { // Custom skin settings
