@@ -108,17 +108,18 @@
             flex-direction: column;
             gap: 1rem; /* Space between buttons */
             z-index: 100; /* Ensure controls are above the player */
-            opacity: 1; /* Default visible when not in fullscreen or on activity */
+            opacity: 1; /* Default visible when not in fullscreen */
             transition: opacity 0.3s ease-in-out; /* Smooth transition for hiding/showing */
         }
 
         /* When in fullscreen, controls are initially hidden, only show on hover/activity */
-        .jwplayer-fullscreen .floating-controls {
+        /* This class is added to the <html> element when in fullscreen */
+        html.jwplayer-fullscreen .floating-controls {
             opacity: 0;
         }
 
         /* When in fullscreen and controls are active/hovered */
-        .jwplayer-fullscreen .floating-controls.active {
+        html.jwplayer-fullscreen .floating-controls.active {
             opacity: 1;
         }
 
@@ -195,7 +196,7 @@
                 floatingControls.classList.add('active');
                 // Clear any existing timeout to keep controls visible
                 clearTimeout(hideControlsTimeout);
-                // Set a new timeout to hide controls after inactivity
+                // Set a new timeout to hide controls after inactivity, ONLY if in fullscreen
                 if (playerInstance && playerInstance.getFullscreen()) {
                     hideControlsTimeout = setTimeout(hideControls, INACTIVITY_TIMEOUT);
                 }
@@ -208,7 +209,10 @@
         function hideControls() {
             const floatingControls = document.getElementById('floatingControls');
             if (floatingControls) {
-                floatingControls.classList.remove('active');
+                // Only hide if currently in fullscreen
+                if (playerInstance && playerInstance.getFullscreen()) {
+                    floatingControls.classList.remove('active');
+                }
             }
         }
 
@@ -216,6 +220,7 @@
          * Handles user activity (mousemove or keydown) to show/hide controls.
          */
         function handleUserActivity() {
+            // Only manage controls if player is in fullscreen
             if (playerInstance && playerInstance.getFullscreen()) {
                 showControls();
             }
@@ -225,6 +230,10 @@
          * Main function to initialize and configure JW Player.
          */
         function initializePlayer() {
+            // Show loading screen immediately when player initialization starts
+            document.getElementById('loading').style.display = 'flex';
+            document.getElementById('loading-percentage').textContent = '0%'; // Reset percentage
+
             // Get URL query parameters
             const queryParams = new URLSearchParams(window.location.search);
             const fullLink = queryParams.get('fullLink');
@@ -255,21 +264,11 @@
                     }
                 }
             } else {
-                // Fallback to previous query parameter logic if fullLink is not provided
-                mediaUrl = queryParams.get('mpd') || queryParams.get('m3u8');
-                keyId = queryParams.get('keyId');
-                key = queryParams.get('key');
-                const drmLicense = queryParams.get('drmLicense');
-
-                if (drmLicense) {
-                    const parts = drmLicense.split(':');
-                    if (parts.length === 2) {
-                        keyId = parts[0];
-                        key = parts[1];
-                    } else {
-                        console.warn('Invalid drmLicense format. Expected "keyId:key".');
-                    }
-                }
+                // No valid media link found, display a message
+                const jwplayerDiv = document.getElementById('jwplayerDiv');
+                jwplayerDiv.innerHTML = '<p class="text-white text-xl text-center">No media link provided. Please go back and enter a valid link.</p>';
+                document.getElementById('loading').style.display = 'none';
+                return;
             }
 
             // Base JW Player configuration
@@ -328,20 +327,26 @@
 
             playerInstance.on('ready', function() {
                 console.log('JW Player is ready!');
-                // The loading animation is now hidden by the 'play' event or a timeout
+                // Hide loading animation when player is ready, not just on 'play'
+                // This ensures it hides even if autoplay is blocked or there's a delay before 'play'
+                hideLoadingAnimation();
             });
 
             // Update loading percentage during buffering
             playerInstance.on('bufferChange', function(event) {
                 const loadingPercentage = document.getElementById('loading-percentage');
-                if (loadingPercentage && document.getElementById('loading').style.display !== 'none') {
+                const loadingScreen = document.getElementById('loading');
+                // Only update if the loading screen is currently visible
+                if (loadingPercentage && loadingScreen.style.display !== 'none' && loadingScreen.style.opacity !== '0') {
                     loadingPercentage.textContent = `${Math.round(event.buffer)}%`;
                 }
             });
 
-            // Show loading screen when buffering starts
+            // Show loading screen when buffering starts (e.g., after seeking or initial load)
             playerInstance.on('buffer', function() {
                 document.getElementById('loading').style.display = 'flex';
+                document.getElementById('loading').style.opacity = '1'; // Ensure it's visible
+                document.getElementById('loading-percentage').textContent = '0%'; // Reset percentage
             });
 
             // Hide loading screen when playback starts
@@ -352,24 +357,23 @@
             // Event listener for fullscreen changes to update button icon and control visibility
             playerInstance.on('fullscreen', function(event) {
                 const fullscreenButton = document.getElementById('fullscreenButton');
-                const jwplayerContainer = document.getElementById('jwplayerDiv'); // Get the player container
+                const htmlElement = document.documentElement; // Target the <html> element for fullscreen class
                 if (fullscreenButton) {
                     fullscreenButton.innerHTML = event.fullscreen ? '<i class="fas fa-compress"></i>' : '<i class="fas fa-expand"></i>';
                 }
 
                 if (event.fullscreen) {
-                    // When entering fullscreen, show controls briefly and start inactivity timer
-                    document.documentElement.classList.add('jwplayer-fullscreen'); // Add class to html for CSS targeting
-                    showControls();
-                    // Add event listeners for user activity
-                    jwplayerContainer.addEventListener('mousemove', handleUserActivity);
+                    htmlElement.classList.add('jwplayer-fullscreen'); // Add class to <html> for CSS targeting
+                    showControls(); // Show controls initially and start inactivity timer
+                    // Add event listeners for user activity on the entire document
+                    document.addEventListener('mousemove', handleUserActivity);
                     document.addEventListener('keydown', handleUserActivity);
                 } else {
-                    // When exiting fullscreen, ensure controls are always visible and remove listeners
-                    document.documentElement.classList.remove('jwplayer-fullscreen');
+                    htmlElement.classList.remove('jwplayer-fullscreen'); // Remove class from <html>
                     clearTimeout(hideControlsTimeout); // Clear any pending hide timeout
-                    showControls(); // Ensure controls are visible when not in fullscreen
-                    jwplayerContainer.removeEventListener('mousemove', handleUserActivity);
+                    showControls(); // Ensure controls are visible when not in fullscreen (no timeout will be set here)
+                    // Remove event listeners
+                    document.removeEventListener('mousemove', handleUserActivity);
                     document.removeEventListener('keydown', handleUserActivity);
                 }
             });
@@ -412,17 +416,17 @@
          * Function to hide the loading animation.
          */
         function hideLoadingAnimation() {
-            // Ensure loading animation is visible for at least 0.5 seconds for a smoother transition
+            // Ensure loading animation is visible for a minimum duration for a smoother transition
             setTimeout(() => {
                 const loadingElement = document.getElementById('loading');
                 if (loadingElement) {
-                    loadingElement.style.opacity = '0';
+                    loadingElement.style.opacity = '0'; // Start fade out
                     loadingElement.style.transition = 'opacity 0.5s ease-out';
                     setTimeout(() => {
-                        loadingElement.style.display = 'none';
-                    }, 500); // After fade out
+                        loadingElement.style.display = 'none'; // Fully hide after fade
+                    }, 500); // Duration of fade transition
                 }
-            }, 500); // Minimum 0.5 seconds display for loading animation
+            }, 500); // Minimum display time for loading screen (0.5 seconds)
         }
 
         // Initialize player and hide loading animation when the window loads
